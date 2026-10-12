@@ -1,0 +1,49 @@
+{
+  "id": "member_a",
+  "style_refs": [
+    "refs/style_hero.png",
+    "refs/style_chibi.webp"
+  ],
+  "person_refs": [
+    "refs/person_1.png",
+    "refs/person_2.webp",
+    "refs/person_3.webp"
+  ],
+  "proportion": "hero",
+  "proportion_prompts": {
+    "hero": "like image 1: about 5 heads tall, broad simplified torso, slightly oversized hands and feet",
+    "chibi": "like image 2: chibi, about 2.5 heads tall, big head, short arms and legs"
+  },
+  "concept": {
+    "prompt": "Images 1-2 show the art style of our game. Images 3-5 are photos of one person (use only for identity).\nCreate ONE full-body 3D game character of that person, rendered in exactly the art style of images 1-2: stylized 3D model, chunky simplified shapes, flat solid colors, soft toon shading, no realistic skin or fabric texture.\nProportions {proportion}.\nKeep the identity: straight black bowl-cut hair with full blunt bangs, thick simple round black glasses, gentle friendly smile, slim build.\nOutfit from image 5: plain white crew-neck T-shirt, beige chino pants, black low-top sneakers. No face mask, no lanyard, nothing in the hands.\nPose: symmetrical A-pose, arms straight and 45 degrees away from the body, fingers together, legs slightly apart, facing the camera, front orthographic view.\nPlain white background, even lighting, no shadow, whole body visible with margin, no text.",
+    "params": {
+      "model_version": "gemini_3_pro_image_preview"
+    }
+  },
+  "model": {
+    "model_version": "v3.1-20260211",
+    "texture": true,
+    "pbr": false,
+    "texture_quality": "detailed",
+    "face_limit": 10000
+  },
+  "rig": {
+    "spec": "mixamo",
+    "out_format": "fbx"
+  },
+  "anim": {
+    "out_format": "fbx",
+    "bake_animation": true,
+    "export_with_geometry": false,
+    "animations": [
+      "preset:idle",
+      "preset:walk",
+      "preset:run",
+      "preset:jump",
+      "preset:slash",
+      "preset:hurt",
+      "preset:fall",
+      "preset:turn"
+    ]
+  }
+}

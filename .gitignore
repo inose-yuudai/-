@@ -1,0 +1,6 @@
+# 人物写真と Tripo の生成物はコミットしない（写真は個人情報、生成物は大きいバイナリ）
+tools/tripo/refs/
+tools/tripo/out/
+
+__pycache__/
+.venv/
