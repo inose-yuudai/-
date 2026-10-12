@@ -24,10 +24,17 @@ API のクレジットは Web 版の会員クレジットと別のことがあ�
 
 ### 3. 実行する場所
 
-- **自分の PC**: `pip install -r tools/tripo/requirements.txt` を実行して、環境変数を設定する。出力をそのまま Unity に入れられるので、いちばん手軽。
-- **Claude Code のクラウド環境**: 環境設定で次の 2 つが必要。どちらも新しいセッションから有効になる。
-  - ネットワークの許可リストに `api.tripo3d.ai` を追加する。生成物のダウンロードで止まった場合は、エラーに出たホスト名も追加する。
-  - `TRIPO_API_KEY` を登録する。
+- **自分の PC**: `pip install -r tools/tripo/requirements.txt` を実行して、環境変数 `TRIPO_API_KEY` を設定する。出力をそのまま Unity に入れられるので、いちばん手軽。
+- **Claude Code のクラウド環境**: claude.ai/code で環境の「Edit environment」を開き、次の 2 つを設定する。どちらも実行中のセッションにも反映される。
+  1. **Network secrets** → Add secret
+     - Allowed websites: `api.tripo3d.ai`
+     - Custom headers: Name `Authorization`、Prefix `Bearer`、Value に API キー
+     - キーはプロキシが付けるので、セッションの中からは見えない。この場合 `TRIPO_API_KEY` は設定しなくてよい
+     - Pro / Max プランで使える。Team / Enterprise では、`TRIPO_API_KEY` を環境変数に入れる（環境を使う人全員に見える点に注意）
+  2. **Network access** → Custom
+     - Allowed domains に `*.tripo3d.ai` と `*.tripo3d.com` を 1 行ずつ追加する（生成物のダウンロード用）
+     - 「Also include default list of common package managers」にはチェックを入れたままにする
+     - ダウンロードで止まった場合は、エラーに出たホスト名も追加する
 
 ## 実行
 

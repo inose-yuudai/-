@@ -11,7 +11,7 @@
   ],
   "proportion": "hero",
   "proportion_prompts": {
-    "hero": "like image 1: about 5 heads tall, broad simplified torso, slightly oversized hands and feet",
+    "hero": "like image 1: about 5 heads tall (not chibi like image 2), broad simplified torso, slightly oversized hands and feet",
     "chibi": "like image 2: chibi, about 2.5 heads tall, big head, short arms and legs"
   },
   "concept": {

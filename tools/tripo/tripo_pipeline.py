@@ -56,12 +56,16 @@ class TripoClient:
 
     公式 SDK (tripo3d) は HTTPS_PROXY を見ずに直接つなぐので、プロキシ必須の環境では使えない。
     requests は環境変数のプロキシと CA 証明書をそのまま使う。
+
+    api_key が None のときは Authorization を付けない。Claude Code のクラウド環境で
+    ネットワークシークレットを使うと、キーはプロキシが付けるのでこちらでは持たない。
     """
 
-    def __init__(self, api_key: str, base_url: str) -> None:
+    def __init__(self, api_key: str | None, base_url: str) -> None:
         self._base_url = base_url.rstrip("/")
         self._api = requests.Session()
-        self._api.headers["Authorization"] = f"Bearer {api_key}"
+        if api_key:
+            self._api.headers["Authorization"] = f"Bearer {api_key}"
         # 出力ファイルは署名付き URL。Authorization を付けると拒否されることがあるので別セッションにする
         self._cdn = requests.Session()
 
@@ -115,6 +119,11 @@ class TripoClient:
 
     def _call(self, method: str, path: str, **kwargs) -> dict:
         resp = self._api.request(method, self._base_url + path, timeout=k_HTTP_TIMEOUT_SEC, **kwargs)
+        if resp.status_code == 401 and "Authorization" not in self._api.headers:
+            raise TripoError(
+                "Tripo に認証されませんでした。環境変数 TRIPO_API_KEY を設定してください"
+                "（Claude Code のクラウド環境ならネットワークシークレットでも可。README を参照）"
+            )
         try:
             body = resp.json()
         except ValueError:
@@ -126,7 +135,7 @@ class TripoClient:
 
 
 class Pipeline:
-    def __init__(self, client: TripoClient | None, config_path: Path, proportion: str | None) -> None:
+    def __init__(self, client: TripoClient, config_path: Path, proportion: str | None) -> None:
         self._client = client
         self._config_path = config_path
         self._config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -141,7 +150,7 @@ class Pipeline:
     # ---- 段階 ----------------------------------------------------------------
 
     def balance(self) -> None:
-        data = self._api().get_balance()
+        data = self._client.get_balance()
         print(f"残高: {data.get('balance')}  （処理中で確保されている分: {data.get('frozen')}）")
 
     def concept(self) -> None:
@@ -166,7 +175,7 @@ class Pipeline:
         key = pending or f"concept_{count + 1:02d}"
 
         def build() -> dict:
-            body = {"type": "generate_image", "prompt": prompt, "files": [self._api().upload_image(p) for p in refs]}
+            body = {"type": "generate_image", "prompt": prompt, "files": [self._client.upload_image(p) for p in refs]}
             body.update(params.get("params", {}))
             return body
 
@@ -176,7 +185,7 @@ class Pipeline:
         url = output.get("generated_image") or output.get("image")
         if not url:
             raise TripoError(f"生成画像の URL がありません: {output}")
-        path = self._api().download(url, self._out_dir / "concept" / f"{key}{_url_ext(url, '.png')}")
+        path = self._client.download(url, self._out_dir / "concept" / f"{key}{_url_ext(url, '.png')}")
         self._finish(key, [path])
         print("\n次: 画像を見て、似ていて画風も合っていれば")
         print(f"  {self._command('views')} --image {_display_path(path)}")
@@ -187,7 +196,7 @@ class Pipeline:
         _require_files([source])
 
         def build() -> dict:
-            return {"type": "generate_multiview_image", "file": self._api().upload_image(source)}
+            return {"type": "generate_multiview_image", "file": self._client.upload_image(source)}
 
         print(f"4 方向画像を生成します（元: {_display_path(source)}）")
         task = self._run_task("views", build, force)
@@ -200,7 +209,7 @@ class Pipeline:
             url = urls.get(f"{name}_view_url")
             if not url:
                 raise TripoError(f"{name} の画像がありません: {output}")
-            paths.append(self._api().download(url, self._out_dir / "views" / f"{name}{_url_ext(url, '.png')}"))
+            paths.append(self._client.download(url, self._out_dir / "views" / f"{name}{_url_ext(url, '.png')}"))
         self._finish("views", paths)
         print(f"\n次: 4 枚を見て、顔・髪・服が向きによって変わっていなければ  {self._command('model')}")
 
@@ -210,14 +219,14 @@ class Pipeline:
             _require_files([single_image])
 
             def build() -> dict:
-                return {"type": "image_to_model", "file": self._api().upload_image(single_image), **params}
+                return {"type": "image_to_model", "file": self._client.upload_image(single_image), **params}
 
             print(f"1 枚の画像から 3D モデルを生成します（{_display_path(single_image)}）")
         else:
             views = self._files("views", "views を先に実行してください")
 
             def build() -> dict:
-                return {"type": "multiview_to_model", "files": [self._api().upload_image(p) for p in views], **params}
+                return {"type": "multiview_to_model", "files": [self._client.upload_image(p) for p in views], **params}
 
             print("4 方向画像から 3D モデルを生成します")
         task = self._run_task("model", build, force)
@@ -227,10 +236,10 @@ class Pipeline:
         url = output.get("pbr_model") or output.get("model") or output.get("base_model")
         if not url:
             raise TripoError(f"モデルの URL がありません: {output}")
-        paths = [self._api().download(url, self._out_dir / "model" / f"{self._id}{_url_ext(url, '.glb')}")]
+        paths = [self._client.download(url, self._out_dir / "model" / f"{self._id}{_url_ext(url, '.glb')}")]
         if output.get("rendered_image"):
             preview_url = output["rendered_image"]
-            paths.append(self._api().download(preview_url, self._out_dir / "model" / f"preview{_url_ext(preview_url, '.webp')}"))
+            paths.append(self._client.download(preview_url, self._out_dir / "model" / f"preview{_url_ext(preview_url, '.webp')}"))
         self._finish("model", paths)
         print(f"\n次: モデルを見て、指・眼鏡・髪の崩れが許せる範囲なら  {self._command('rig')}")
 
@@ -262,7 +271,7 @@ class Pipeline:
         if task is None:
             return
         url = task["output"]["model"]
-        path = self._api().download(url, self._out_dir / "rig" / f"{self._id}{_url_ext(url, '.fbx')}")
+        path = self._client.download(url, self._out_dir / "rig" / f"{self._id}{_url_ext(url, '.fbx')}")
         self._finish("rig", [path])
         print(f"\n次: モーションを付ける  {self._command('anim')}")
 
@@ -290,7 +299,7 @@ class Pipeline:
             url = task["output"]["model"]
             label = name.split(":")[-1]
             # Unity の「モデル名@アニメ名.fbx」の命名規則に合わせる
-            path = self._api().download(url, self._out_dir / "anim" / f"{self._id}@{label}{_url_ext(url, '.fbx')}")
+            path = self._client.download(url, self._out_dir / "anim" / f"{self._id}@{label}{_url_ext(url, '.fbx')}")
             self._finish(key, [path])
         print(f"\n完了。Unity に取り込むファイル: {_display_path(self._out_dir / 'rig')} と {_display_path(self._out_dir / 'anim')}")
 
@@ -318,7 +327,7 @@ class Pipeline:
                 return self._wait(key, record["task_id"])
 
         body = build()
-        task_id = self._api().create_task(body)
+        task_id = self._client.create_task(body)
         self._drop_downstream(key)
         self._state[key] = {"task_id": task_id, "type": body["type"], "status": "pending"}
         self._save()
@@ -326,7 +335,7 @@ class Pipeline:
 
     def _wait(self, key: str, task_id: str) -> dict:
         try:
-            task = self._api().wait_task(task_id)
+            task = self._client.wait_task(task_id)
         except TripoError:
             self._state[key]["status"] = "failed"
             self._save()
@@ -371,11 +380,6 @@ class Pipeline:
     def _command(self, stage: str) -> str:
         return f"python {_display_path(Path(__file__))} -c {_display_path(self._config_path)} {stage}"
 
-    def _api(self) -> TripoClient:
-        if self._client is None:
-            raise TripoError("TRIPO_API_KEY が設定されていません（README を参照）")
-        return self._client
-
     def _save(self) -> None:
         self._out_dir.mkdir(parents=True, exist_ok=True)
         tmp = self._state_path.with_suffix(".tmp")
@@ -415,8 +419,7 @@ def main() -> int:
     parser.add_argument("--force", action="store_true", help="作成済みでも作り直す（クレジットを使う）")
     args = parser.parse_args()
 
-    api_key = os.environ.get("TRIPO_API_KEY")
-    client = TripoClient(api_key, os.environ.get("TRIPO_BASE_URL", k_DEFAULT_BASE_URL)) if api_key else None
+    client = TripoClient(os.environ.get("TRIPO_API_KEY"), os.environ.get("TRIPO_BASE_URL", k_DEFAULT_BASE_URL))
     pipeline = Pipeline(client, args.config, args.proportion)
     try:
         if args.stage == "balance":
