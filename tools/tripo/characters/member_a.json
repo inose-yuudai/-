@@ -11,11 +11,11 @@
   ],
   "proportion": "hero",
   "proportion_prompts": {
-    "hero": "like image 1: about 5 heads tall (not chibi like image 2), broad simplified torso, slightly oversized hands and feet",
+    "hero": "like image 1: about 5.5 heads tall (not chibi like image 2), broad simplified torso, slightly oversized hands and feet",
     "chibi": "like image 2: chibi, about 2.5 heads tall, big head, short arms and legs"
   },
   "concept": {
-    "prompt": "Images 1-2 show the art style of our game. Images 3-5 are photos of one person (use only for identity).\nCreate ONE full-body 3D game character of that person, rendered in exactly the art style of images 1-2: stylized 3D model, chunky simplified shapes, flat solid colors, soft toon shading, no realistic skin or fabric texture.\nProportions {proportion}.\nKeep the identity: straight black bowl-cut hair with full blunt bangs, thick simple round black glasses, gentle friendly smile, slim build.\nOutfit from image 5: plain white crew-neck T-shirt, beige chino pants, black low-top sneakers. No face mask, no lanyard, nothing in the hands.\nPose: symmetrical A-pose, arms straight and 45 degrees away from the body, fingers together, legs slightly apart, facing the camera, front orthographic view.\nPlain white background, even lighting, no shadow, whole body visible with margin, no text.",
+    "prompt": "Images 1-2 show the art style of our game. Images 3-5 are photos of one person (use only for identity).\nCreate ONE full-body 3D game character of that person, rendered in exactly the art style of images 1-2: stylized 3D model, chunky simplified shapes, flat solid colors, soft toon shading, no realistic skin or fabric texture.\nProportions {proportion}.\nKeep the identity: straight black mushroom-cut hair with full blunt bangs, thick round black glasses, big friendly smile, slim build.\nOutfit from image 5: plain white crew-neck T-shirt, beige chino pants, black low-top sneakers. No face mask, no lanyard or name tag, nothing in the hands.\nPose: T-pose, arms straight out to the sides at shoulder height, palms down, fingers together, legs straight and slightly apart, facing the camera, front orthographic view.\nPlain white background, even lighting, no shadow, whole body visible with margin, no text.",
     "params": {
       "model_version": "gemini_3_pro_image_preview"
     }
@@ -42,8 +42,7 @@
       "preset:jump",
       "preset:slash",
       "preset:hurt",
-      "preset:fall",
-      "preset:turn"
+      "preset:fall"
     ]
   }
 }
